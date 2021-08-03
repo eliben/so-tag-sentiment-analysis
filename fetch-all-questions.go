@@ -1,9 +1,7 @@
 // StackOverflow analysis using its API in Go.
 //
-// Registered on stackapps. Go to https://stackapps.com/apps/oauth/view/19622
-// and log in, insert "key" for increased quota
-//
-// To get the increased quota, run with the env var STACK_KEY=<key>
+// To get the increased quota, get key from stackapps.com and run with the env
+// var STACK_KEY=<key>
 //
 // Eli Bendersky [https://eli.thegreenplace.net]
 // This code is in the public domain.
