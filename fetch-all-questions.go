@@ -112,6 +112,9 @@ func fetchResults(baseDir string, tags []string, fromDate time.Time, toDate time
 			if !reply.HasMore {
 				break
 			}
+
+			// Try not to get throttled...
+			time.Sleep(300 * time.Millisecond)
 		}
 	}
 }
