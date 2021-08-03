@@ -149,10 +149,16 @@ func main() {
 				closedRatio := float64(res.closed) / float64(res.total)
 				closedAndNegativeRatio := float64(res.closedAndNegative) / float64(res.total)
 
-				fmt.Printf("%s,%d,%.2f,%.2f,%.2f\n", endDate.Format("2006-02-01"), res.total, negativeRatio, closedRatio, closedAndNegativeRatio)
+				fmt.Printf("%s,%d,%.3f,%.3f,%.3f\n", endDate.Format("2006-02-01"), res.total, negativeRatio, closedRatio, closedAndNegativeRatio)
 
 				d = endDate
 			}
+		} else {
+			res := analyzeDir(*dirFlag, tag, fDate, tDate)
+			negativeRatio := float64(res.negative) / float64(res.total)
+			closedRatio := float64(res.closed) / float64(res.total)
+			closedAndNegativeRatio := float64(res.closedAndNegative) / float64(res.total)
+			fmt.Printf("%d,%.3f,%.3f,%.3f\n", res.total, negativeRatio, closedRatio, closedAndNegativeRatio)
 		}
 	}
 }
