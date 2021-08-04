@@ -1,5 +1,5 @@
-// First fetch the data with fetch-all-questions into some base directory,
-// and then point this script at the directory.
+// Before running this program, first fetch the data with fetch-all-questions
+// into some base directory.
 //
 // Eli Bendersky [https://eli.thegreenplace.net]
 // This code is in the public domain.
@@ -111,10 +111,6 @@ func analyzeDir(baseDir string, tag string, fromDate time.Time, toDate time.Time
 		}
 	}
 
-	//fmt.Println("Total", totalNum)
-	//fmt.Printf("Negative: %d (%.1f%%)\n", numNegative, 100.0*float64(numNegative)/float64(totalNum))
-	//fmt.Printf("Closed: %d (%.1f%%)\n", numClosed, 100.0*float64(numClosed)/float64(totalNum))
-	//fmt.Printf("ClosedAndNegative: %d (%.1f%%)\n", numClosedAndNegative, 100.0*float64(numClosedAndNegative)/float64(totalNum))
 	return tagAnalysisResult{
 		total:             totalNum,
 		negative:          numNegative,
@@ -138,6 +134,13 @@ func main() {
 
 	fmt.Println(*dirFlag)
 
+	emitResult := func(date time.Time, tr tagAnalysisResult) {
+		negativeRatio := float64(tr.negative) / float64(tr.total)
+		closedRatio := float64(tr.closed) / float64(tr.total)
+		closedAndNegativeRatio := float64(tr.closedAndNegative) / float64(tr.total)
+		fmt.Printf("%s,%d,%.3f,%.3f,%.3f\n", date.Format("2006-02-01"), tr.total, negativeRatio, closedRatio, closedAndNegativeRatio)
+	}
+
 	for _, tag := range tags {
 		fmt.Printf("\n%s\n", tag)
 		if *bymonthFlag {
@@ -145,20 +148,13 @@ func main() {
 				endDate := d.AddDate(0, 1, 0)
 
 				res := analyzeDir(*dirFlag, tag, d, endDate)
-				negativeRatio := float64(res.negative) / float64(res.total)
-				closedRatio := float64(res.closed) / float64(res.total)
-				closedAndNegativeRatio := float64(res.closedAndNegative) / float64(res.total)
-
-				fmt.Printf("%s,%d,%.3f,%.3f,%.3f\n", endDate.Format("2006-02-01"), res.total, negativeRatio, closedRatio, closedAndNegativeRatio)
+				emitResult(endDate, res)
 
 				d = endDate
 			}
 		} else {
 			res := analyzeDir(*dirFlag, tag, fDate, tDate)
-			negativeRatio := float64(res.negative) / float64(res.total)
-			closedRatio := float64(res.closed) / float64(res.total)
-			closedAndNegativeRatio := float64(res.closedAndNegative) / float64(res.total)
-			fmt.Printf("%d,%.3f,%.3f,%.3f\n", res.total, negativeRatio, closedRatio, closedAndNegativeRatio)
+			emitResult(tDate, res)
 		}
 	}
 }
