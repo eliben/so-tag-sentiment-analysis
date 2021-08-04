@@ -74,9 +74,10 @@ func makePageQuery(page int, tag string, fromDate time.Time, toDate time.Time) s
 
 func fetchResults(baseDir string, tags []string, fromDate time.Time, toDate time.Time) {
 	for _, tag := range tags {
+		// Clear out subdirectory if it already exists, and create it anew.
 		dirName := fmt.Sprintf("%s/%s", baseDir, tag)
 		os.RemoveAll(dirName)
-		_ = os.Mkdir(dirName, 0777)
+		os.Mkdir(dirName, 0777)
 
 		fmt.Println("")
 		fmt.Printf("Fetching tag '%s' to dir '%s'\n", tag, dirName)
@@ -139,7 +140,7 @@ func main() {
 	tDate := mustParseTime(*toDate)
 	tags := strings.Split(*tagsFlag, ",")
 
-	// Make dir / ignore error (if it exists, for example)
+	// Try to create the directory; ignore error (if it already exists, etc.)
 	_ = os.Mkdir(*dirFlag, 0777)
 	fetchResults(*dirFlag, tags, fDate, tDate)
 }

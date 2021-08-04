@@ -1,5 +1,9 @@
 // Before running this program, first fetch the data with fetch-all-questions
-// into some base directory.
+// into some base directory. Pass this base directory with the -dir flag to
+// this program.
+//
+// To get a month-by-month breakdown from start date to end date, use the
+// -bymonth flag.
 //
 // Eli Bendersky [https://eli.thegreenplace.net]
 // This code is in the public domain.
