@@ -67,6 +67,8 @@ func mustParseTime(date string) time.Time {
 	return t
 }
 
+// analyzeDir analyzes the question data in base directory baseDir for the given
+// tag. Only questions between fromDate and toDate (inclusive) are considered.
 func analyzeDir(baseDir string, tag string, fromDate time.Time, toDate time.Time) tagAnalysisResult {
 	dirName := fmt.Sprintf("%s/%s", baseDir, tag)
 	fileinfos, err := ioutil.ReadDir(dirName)
@@ -136,8 +138,6 @@ func main() {
 	tDate := mustParseTime(*toDate)
 	tags := strings.Split(*tagsFlag, ",")
 
-	fmt.Println(*dirFlag)
-
 	emitResult := func(date time.Time, tr tagAnalysisResult) {
 		negativeRatio := float64(tr.negative) / float64(tr.total)
 		closedRatio := float64(tr.closed) / float64(tr.total)
@@ -149,7 +149,7 @@ func main() {
 		fmt.Printf("\n%s\n", tag)
 		if *bymonthFlag {
 			for d := fDate; d.Before(tDate); {
-				endDate := d.AddDate(0, 1, 0)
+				endDate := d.AddDate(0, 1, 0) // add a month
 
 				res := analyzeDir(*dirFlag, tag, d, endDate)
 				emitResult(endDate, res)
