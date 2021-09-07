@@ -126,7 +126,7 @@ func analyzeDir(baseDir string, tag string, fromDate time.Time, toDate time.Time
 }
 
 func main() {
-	dirFlag := flag.String("dir", "", "base directory to store results")
+	dirFlag := flag.String("dir", "", "base directory with results")
 	fromDate := flag.String("fromdate", "", "start date in 2006-01-02 format")
 	toDate := flag.String("todate", "", "end date in 2006-01-02 format")
 	tagsFlag := flag.String("tags", "", "tags separated by commas")
