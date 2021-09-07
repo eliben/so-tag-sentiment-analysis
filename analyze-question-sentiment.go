@@ -142,7 +142,7 @@ func main() {
 		negativeRatio := float64(tr.negative) / float64(tr.total)
 		closedRatio := float64(tr.closed) / float64(tr.total)
 		closedAndNegativeRatio := float64(tr.closedAndNegative) / float64(tr.total)
-		fmt.Printf("%s,%d,%.3f,%.3f,%.3f\n", date.Format("2006-02-01"), tr.total, negativeRatio, closedRatio, closedAndNegativeRatio)
+		fmt.Printf("%s,%d,%.3f,%.3f,%.3f\n", date.Format("2006-01-02"), tr.total, negativeRatio, closedRatio, closedAndNegativeRatio)
 	}
 
 	for _, tag := range tags {
