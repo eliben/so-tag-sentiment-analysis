@@ -72,11 +72,15 @@ func makePageQuery(page int, tag string, fromDate time.Time, toDate time.Time) s
 	return v.Encode()
 }
 
-func fetchResults(baseDir string, tags []string, fromDate time.Time, toDate time.Time) {
+func fetchResults(baseDir string, tags []string, fromDate time.Time, toDate time.Time, erase bool) {
 	for _, tag := range tags {
 		// Clear out subdirectory if it already exists, and create it anew.
 		dirName := fmt.Sprintf("%s/%s", baseDir, tag)
-		os.RemoveAll(dirName)
+
+		if erase {
+			fmt.Println("Erasing directory", dirName)
+			os.RemoveAll(dirName)
+		}
 		os.Mkdir(dirName, 0777)
 
 		fmt.Println("")
@@ -133,6 +137,7 @@ func main() {
 	fromDate := flag.String("fromdate", "", "start date in 2006-01-02 format")
 	toDate := flag.String("todate", "", "end date in 2006-01-02 format")
 	tagsFlag := flag.String("tags", "", "tags separated by commas")
+	eraseFlag := flag.Bool("erase", false, "erase previous contents of fetched directories")
 
 	flag.Parse()
 
@@ -140,7 +145,15 @@ func main() {
 	tDate := mustParseTime(*toDate)
 	tags := strings.Split(*tagsFlag, ",")
 
+	if len(*dirFlag) == 0 {
+		log.Fatal("-dir must be provided and cannot be empty")
+	}
+
+	if len(*tagsFlag) == 0 || len(tags) == 0 {
+		log.Fatal("provide at least one tag with -tags")
+	}
+
 	// Try to create the directory; ignore error (if it already exists, etc.)
 	_ = os.Mkdir(*dirFlag, 0777)
-	fetchResults(*dirFlag, tags, fDate, tDate)
+	fetchResults(*dirFlag, tags, fDate, tDate, *eraseFlag)
 }
