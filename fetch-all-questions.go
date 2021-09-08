@@ -1,7 +1,12 @@
 // StackOverflow analysis using its API in Go.
 //
-// To get the increased quota, get key from stackapps.com and run with the env
-// var STACK_KEY=<key>
+// This program just fetches data from the StackOverflow API. The idea is that
+// you run it once to fetch all the data you need, and can then analyze this
+// data locally by repeatedly invoking analyze-question-sentiment with different
+// parameters.
+//
+// To get the increased API quota, get a key from stackapps.com and run with the
+// env var STACK_KEY=<key>
 //
 // Eli Bendersky [https://eli.thegreenplace.net]
 // This code is in the public domain.
@@ -125,6 +130,10 @@ func fetchResults(baseDir string, tags []string, fromDate time.Time, toDate time
 }
 
 func mustParseTime(date string) time.Time {
+	if len(strings.TrimSpace(date)) == 0 {
+		log.Fatal("empty time string")
+	}
+
 	t, err := time.Parse("2006-01-02", date)
 	if err != nil {
 		log.Fatal(err)
