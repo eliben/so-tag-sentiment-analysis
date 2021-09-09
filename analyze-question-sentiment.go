@@ -13,7 +13,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -77,15 +76,15 @@ func parseDate(date string) time.Time {
 // and toDate (inclusive) are considered.
 func analyzeDir(baseDir string, tag string, fromDate time.Time, toDate time.Time) tagAnalysisResult {
 	dirName := fmt.Sprintf("%s/%s", baseDir, tag)
-	fileinfos, err := ioutil.ReadDir(dirName)
+	entries, err := os.ReadDir(dirName)
 	failonf(err, "reading directory %q", dirName)
 
 	var tr tagAnalysisResult
 
-	for _, entry := range fileinfos {
+	for _, entry := range entries {
 		if strings.HasSuffix(entry.Name(), "json") {
 			path := filepath.Join(dirName, entry.Name())
-			data, err := ioutil.ReadFile(path)
+			data, err := os.ReadFile(path)
 			failonf(err, "reading file %q", path)
 
 			var reply Reply

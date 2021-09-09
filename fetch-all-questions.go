@@ -16,7 +16,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -102,13 +102,13 @@ func fetchResults(baseDir string, tags []string, fromDate time.Time, toDate time
 			defer resp.Body.Close()
 
 			fmt.Println("Response status:", resp.Status)
-			body, err := ioutil.ReadAll(resp.Body)
+			body, err := io.ReadAll(resp.Body)
 			if err != nil {
 				log.Fatal(err)
 			}
 
 			pageFilename := fmt.Sprintf("%s/so%03d.json", dirName, page)
-			err = ioutil.WriteFile(pageFilename, body, 0644)
+			err = os.WriteFile(pageFilename, body, 0644)
 			if err != nil {
 				log.Fatal(err)
 			}
