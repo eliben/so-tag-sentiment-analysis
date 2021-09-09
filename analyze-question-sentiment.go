@@ -63,14 +63,6 @@ type tagAnalysisResult struct {
 	maxDate time.Time
 }
 
-func mustParseDate(date string) time.Time {
-	t, err := time.Parse("2006-01-02", date)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return t
-}
-
 func parseDate(date string) time.Time {
 	t, err := time.Parse("2006-01-02", date)
 	if err != nil {
