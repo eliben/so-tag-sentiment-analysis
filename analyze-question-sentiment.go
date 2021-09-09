@@ -57,9 +57,13 @@ type tagAnalysisResult struct {
 	negative          int
 	closed            int
 	closedAndNegative int
+
+	// min and max dates of actual items
+	minDate time.Time
+	maxDate time.Time
 }
 
-func mustParseTime(date string) time.Time {
+func mustParseDate(date string) time.Time {
 	t, err := time.Parse("2006-01-02", date)
 	if err != nil {
 		log.Fatal(err)
@@ -67,8 +71,17 @@ func mustParseTime(date string) time.Time {
 	return t
 }
 
+func parseDate(date string) time.Time {
+	t, err := time.Parse("2006-01-02", date)
+	if err != nil {
+		return time.Time{} // zero
+	}
+	return t
+}
+
 // analyzeDir analyzes the question data in base directory baseDir for the given
-// tag. Only questions between fromDate and toDate (inclusive) are considered.
+// tag. If fromDate and toDate are non-zero, then only questions between fromDate
+// and toDate (inclusive) are considered.
 func analyzeDir(baseDir string, tag string, fromDate time.Time, toDate time.Time) tagAnalysisResult {
 	dirName := fmt.Sprintf("%s/%s", baseDir, tag)
 	fileinfos, err := ioutil.ReadDir(dirName)
@@ -76,10 +89,7 @@ func analyzeDir(baseDir string, tag string, fromDate time.Time, toDate time.Time
 		log.Fatal(err)
 	}
 
-	totalNum := 0
-	numNegative := 0
-	numClosed := 0
-	numClosedAndNegative := 0
+	var tr tagAnalysisResult
 
 	for _, entry := range fileinfos {
 		if strings.HasSuffix(entry.Name(), "json") {
@@ -95,34 +105,38 @@ func analyzeDir(baseDir string, tag string, fromDate time.Time, toDate time.Time
 
 			for _, item := range reply.Items {
 				itemDate := time.Unix(int64(item.CreationDate), 0)
-				if itemDate.Before(fromDate) || itemDate.After(toDate) {
+				if !fromDate.IsZero() && itemDate.Before(fromDate) {
+					continue
+				}
+				if !toDate.IsZero() && itemDate.After(toDate) {
 					continue
 				}
 
-				totalNum++
+				tr.total++
 
 				if item.Score < 0 {
-					numNegative++
+					tr.negative++
 				}
 
 				if item.ClosedDate > 0 {
-					numClosed++
+					tr.closed++
 
 					if item.Score < 0 {
-						numClosedAndNegative++
+						tr.closedAndNegative++
 						//fmt.Println(item.Link, time.Unix(int64(item.CreationDate), 0), item.Score)
 					}
+				}
+
+				if tr.minDate.IsZero() || itemDate.Before(tr.minDate) {
+					tr.minDate = itemDate
+				}
+				if tr.maxDate.IsZero() || itemDate.After(tr.maxDate) {
+					tr.maxDate = itemDate
 				}
 			}
 		}
 	}
-
-	return tagAnalysisResult{
-		total:             totalNum,
-		negative:          numNegative,
-		closed:            numClosed,
-		closedAndNegative: numClosedAndNegative,
-	}
+	return tr
 }
 
 func main() {
@@ -134,20 +148,29 @@ func main() {
 
 	flag.Parse()
 
-	fDate := mustParseTime(*fromDate)
-	tDate := mustParseTime(*toDate)
+	fDate := parseDate(*fromDate)
+	tDate := parseDate(*toDate)
 	tags := strings.Split(*tagsFlag, ",")
 
 	emitResult := func(date time.Time, tr tagAnalysisResult) {
 		negativeRatio := float64(tr.negative) / float64(tr.total)
 		closedRatio := float64(tr.closed) / float64(tr.total)
 		closedAndNegativeRatio := float64(tr.closedAndNegative) / float64(tr.total)
+
+		if date.IsZero() {
+			// if not explicit date, consider the max encountered date
+			date = tr.maxDate
+		}
+
 		fmt.Printf("%s,%d,%.3f,%.3f,%.3f\n", date.Format("2006-01-02"), tr.total, negativeRatio, closedRatio, closedAndNegativeRatio)
 	}
 
 	for _, tag := range tags {
 		fmt.Printf("\n%s\n", tag)
 		if *bymonthFlag {
+			if fDate.IsZero() || tDate.IsZero() {
+				log.Fatal("-bymonth requires -fromdate and -todate, for now")
+			}
 			for d := fDate; d.Before(tDate); {
 				endDate := d.AddDate(0, 1, 0) // add a month
 
