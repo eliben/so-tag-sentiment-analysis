@@ -134,12 +134,7 @@ func analyzeDir(baseDir string, tag string, fromDate time.Time, toDate time.Time
 
 // Discover the names of the subfolders inside dir (non-recursively).
 func readFolderNames(dirpath string) ([]string, error) {
-	dir, err := os.Open(dirpath)
-	if err != nil {
-		return nil, err
-	}
-	defer dir.Close()
-	entries, err := dir.ReadDir(0)
+	entries, err := os.ReadDir(dirpath)
 	if err != nil {
 		return nil, err
 	}
