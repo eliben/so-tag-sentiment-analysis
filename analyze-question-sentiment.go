@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -131,6 +132,26 @@ func analyzeDir(baseDir string, tag string, fromDate time.Time, toDate time.Time
 	return tr
 }
 
+// Discover the names of the subfolders inside dir (non-recursively).
+func readFolderNames(dirpath string) ([]string, error) {
+	dir, err := os.Open(dirpath)
+	if err != nil {
+		return nil, err
+	}
+	defer dir.Close()
+	entries, err := dir.ReadDir(0)
+	if err != nil {
+		return nil, err
+	}
+	var folders []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			folders = append(folders, entry.Name())
+		}
+	}
+	return folders, nil
+}
+
 func main() {
 	dirFlag := flag.String("dir", "", "base directory with results")
 	fromDate := flag.String("fromdate", "", "start date in 2006-01-02 format")
@@ -155,6 +176,16 @@ func main() {
 		}
 
 		fmt.Printf("%s,%d,%.3f,%.3f,%.3f\n", date.Format("2006-01-02"), tr.total, negativeRatio, closedRatio, closedAndNegativeRatio)
+	}
+
+	if *tagsFlag == "" {
+		// No explicit tags specified by user => then discover
+		// the subfolders of the results base directory
+		var err error
+		tags, err = readFolderNames(*dirFlag)
+		if err != nil {
+			log.Fatalf("Couldn't read contents of %q", *dirFlag)
+		}
 	}
 
 	for _, tag := range tags {
