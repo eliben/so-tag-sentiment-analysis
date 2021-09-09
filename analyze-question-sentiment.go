@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -66,7 +67,7 @@ type tagAnalysisResult struct {
 func parseDate(date string) time.Time {
 	t, err := time.Parse("2006-01-02", date)
 	if err != nil {
-		return time.Time{} // zero
+		return time.Time{} // zero, here means undefined
 	}
 	return t
 }
@@ -77,23 +78,19 @@ func parseDate(date string) time.Time {
 func analyzeDir(baseDir string, tag string, fromDate time.Time, toDate time.Time) tagAnalysisResult {
 	dirName := fmt.Sprintf("%s/%s", baseDir, tag)
 	fileinfos, err := ioutil.ReadDir(dirName)
-	if err != nil {
-		log.Fatal(err)
-	}
+	failonf(err, "reading directory %q", dirName)
 
 	var tr tagAnalysisResult
 
 	for _, entry := range fileinfos {
 		if strings.HasSuffix(entry.Name(), "json") {
-			data, err := ioutil.ReadFile(filepath.Join(dirName, entry.Name()))
-			if err != nil {
-				log.Fatal(err)
-			}
+			path := filepath.Join(dirName, entry.Name())
+			data, err := ioutil.ReadFile(path)
+			failonf(err, "reading file %q", path)
 
 			var reply Reply
-			if err = json.Unmarshal(data, &reply); err != nil {
-				log.Fatal(err)
-			}
+			err = json.Unmarshal(data, &reply)
+			failonf(err, "unmarshalling")
 
 			for _, item := range reply.Items {
 				itemDate := time.Unix(int64(item.CreationDate), 0)
@@ -131,6 +128,29 @@ func analyzeDir(baseDir string, tag string, fromDate time.Time, toDate time.Time
 	return tr
 }
 
+// readFolderNames discovers and returns the names of the subfolders
+// inside dir (non-recursively).
+func readFolderNames(dirpath string) []string {
+	entries, err := os.ReadDir(dirpath)
+	failonf(err, "reading directory %q", dirpath)
+
+	var folders []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			folders = append(folders, entry.Name())
+		}
+	}
+	return folders
+}
+
+// failonf exits with a message if err is not nil.
+func failonf(err error, pattern string, args ...interface{}) {
+	if err != nil {
+		log.Println(err)
+		log.Fatalf(pattern, args...)
+	}
+}
+
 func main() {
 	dirFlag := flag.String("dir", "", "base directory with results")
 	fromDate := flag.String("fromdate", "", "start date in 2006-01-02 format")
@@ -155,6 +175,12 @@ func main() {
 		}
 
 		fmt.Printf("%s,%d,%.3f,%.3f,%.3f\n", date.Format("2006-01-02"), tr.total, negativeRatio, closedRatio, closedAndNegativeRatio)
+	}
+
+	if *tagsFlag == "" {
+		// No explicit tags specified by user => then discover
+		// the subfolders of the results base directory
+		tags = readFolderNames(*dirFlag)
 	}
 
 	for _, tag := range tags {
