@@ -10,7 +10,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -60,8 +59,8 @@ type tagAnalysisResult struct {
 	closedAndNegative int
 
 	// min and max dates of actual items
-	minDate sql.NullTime
-	maxDate sql.NullTime
+	minDate time.Time
+	maxDate time.Time
 }
 
 func mustParseDate(date string) time.Time {
@@ -72,19 +71,18 @@ func mustParseDate(date string) time.Time {
 	return t
 }
 
-func parseDate(date string) sql.NullTime {
+func parseDate(date string) time.Time {
 	t, err := time.Parse("2006-01-02", date)
-	ok := err == nil
-	return sql.NullTime{
-		Valid: ok,
-		Time:  t,
+	if err != nil {
+		return time.Time{} // zero
 	}
+	return t
 }
 
 // analyzeDir analyzes the question data in base directory baseDir for the given
-// tag. If fromDate and toDate are provided, then only questions between fromDate
+// tag. If fromDate and toDate are non-zero, then only questions between fromDate
 // and toDate (inclusive) are considered.
-func analyzeDir(baseDir string, tag string, fromDate sql.NullTime, toDate sql.NullTime) tagAnalysisResult {
+func analyzeDir(baseDir string, tag string, fromDate time.Time, toDate time.Time) tagAnalysisResult {
 	dirName := fmt.Sprintf("%s/%s", baseDir, tag)
 	fileinfos, err := ioutil.ReadDir(dirName)
 	if err != nil {
@@ -107,10 +105,10 @@ func analyzeDir(baseDir string, tag string, fromDate sql.NullTime, toDate sql.Nu
 
 			for _, item := range reply.Items {
 				itemDate := time.Unix(int64(item.CreationDate), 0)
-				if fromDate.Valid && itemDate.Before(fromDate.Time) {
+				if !fromDate.IsZero() && itemDate.Before(fromDate) {
 					continue
 				}
-				if toDate.Valid && itemDate.After(toDate.Time) {
+				if !toDate.IsZero() && itemDate.After(toDate) {
 					continue
 				}
 
@@ -129,13 +127,11 @@ func analyzeDir(baseDir string, tag string, fromDate sql.NullTime, toDate sql.Nu
 					}
 				}
 
-				if !tr.minDate.Valid || itemDate.Before(tr.minDate.Time) {
-					tr.minDate.Time = itemDate
-					tr.minDate.Valid = true
+				if tr.minDate.IsZero() || itemDate.Before(tr.minDate) {
+					tr.minDate = itemDate
 				}
-				if !tr.maxDate.Valid || itemDate.After(tr.maxDate.Time) {
-					tr.maxDate.Time = itemDate
-					tr.maxDate.Valid = true
+				if tr.maxDate.IsZero() || itemDate.After(tr.maxDate) {
+					tr.maxDate = itemDate
 				}
 			}
 		}
@@ -156,30 +152,27 @@ func main() {
 	tDate := parseDate(*toDate)
 	tags := strings.Split(*tagsFlag, ",")
 
-	emitResult := func(date sql.NullTime, tr tagAnalysisResult) {
+	emitResult := func(date time.Time, tr tagAnalysisResult) {
 		negativeRatio := float64(tr.negative) / float64(tr.total)
 		closedRatio := float64(tr.closed) / float64(tr.total)
 		closedAndNegativeRatio := float64(tr.closedAndNegative) / float64(tr.total)
 
-		if !date.Valid {
+		if date.IsZero() {
 			// if not explicit date, consider the max encountered date
 			date = tr.maxDate
 		}
 
-		fmt.Printf("%s,%d,%.3f,%.3f,%.3f\n", date.Time.Format("2006-01-02"), tr.total, negativeRatio, closedRatio, closedAndNegativeRatio)
+		fmt.Printf("%s,%d,%.3f,%.3f,%.3f\n", date.Format("2006-01-02"), tr.total, negativeRatio, closedRatio, closedAndNegativeRatio)
 	}
 
 	for _, tag := range tags {
 		fmt.Printf("\n%s\n", tag)
 		if *bymonthFlag {
-			if !fDate.Valid || !tDate.Valid {
+			if fDate.IsZero() || tDate.IsZero() {
 				log.Fatal("-bymonth requires -fromdate and -todate, for now")
 			}
-			for d := fDate; d.Time.Before(tDate.Time); {
-				endDate := sql.NullTime{
-					Valid: true,
-					Time:  d.Time.AddDate(0, 1, 0), // add a month
-				}
+			for d := fDate; d.Before(tDate); {
+				endDate := d.AddDate(0, 1, 0) // add a month
 
 				res := analyzeDir(*dirFlag, tag, d, endDate)
 				emitResult(endDate, res)
