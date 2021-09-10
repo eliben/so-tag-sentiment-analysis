@@ -79,14 +79,18 @@ func makePageQuery(page int, tag string, fromDate time.Time, toDate time.Time) s
 
 func fetchResults(baseDir string, tags []string, fromDate time.Time, toDate time.Time, erase bool) {
 	for _, tag := range tags {
-		// Clear out subdirectory if it already exists, and create it anew.
 		dirName := fmt.Sprintf("%s/%s", baseDir, tag)
 
 		if erase {
+			// Clear out subdirectory if it already exists
 			fmt.Println("Erasing directory", dirName)
 			os.RemoveAll(dirName)
 		}
 		os.Mkdir(dirName, 0777)
+
+		if !isEmptyDir(dirName) {
+			log.Fatalf("Directory %s is not empty. You may clear previous data with -erase", dirName)
+		}
 
 		fmt.Println("")
 		fmt.Printf("Fetching tag '%s' to dir '%s'\n", tag, dirName)
@@ -127,6 +131,18 @@ func fetchResults(baseDir string, tags []string, fromDate time.Time, toDate time
 			time.Sleep(300 * time.Millisecond)
 		}
 	}
+}
+
+func isEmptyDir(dirpath string) bool {
+	dir, err := os.Open(dirpath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer dir.Close()
+	_, err = dir.Readdirnames(1)
+	b := err == io.EOF
+	// true if couldn't find 1 entry in dir
+	return b
 }
 
 func mustParseTime(date string) time.Time {
