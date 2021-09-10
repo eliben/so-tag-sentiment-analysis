@@ -163,6 +163,10 @@ func main() {
 	tDate := parseDate(*toDate)
 	tags := strings.Split(*tagsFlag, ",")
 
+	if len(*dirFlag) == 0 {
+		log.Fatal("-dir must be provided and cannot be empty. Please use the folder where the data was fetched.")
+	}
+
 	emitResult := func(date time.Time, tr tagAnalysisResult) {
 		negativeRatio := float64(tr.negative) / float64(tr.total)
 		closedRatio := float64(tr.closed) / float64(tr.total)
